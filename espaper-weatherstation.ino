@@ -270,8 +270,7 @@ void drawMgg() {
   gfx.setFont(ArialMT_Plain_10);
   gfx.setColor(MINI_BLACK);
   gfx.setTextAlignment(TEXT_ALIGN_LEFT);
-  gfx.drawString(5, 68, "MGG:");
-  gfx.drawString(40, 68, mgg_payload);
+  gfx.drawString(5, 68, mgg_payload);
 }
 
 // draws the clock
