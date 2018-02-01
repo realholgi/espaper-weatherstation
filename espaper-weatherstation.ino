@@ -53,7 +53,7 @@ See more at https://blog.squix.org
 #include <WundergroundHourly.h>
 #include <MiniGrafx.h>
 #include <EPD_WaveShare.h>
-
+#include <ESP8266HTTPClient.h>
 
 
 #include "ArialRounded.h"
@@ -86,6 +86,7 @@ MiniGrafx gfx = MiniGrafx(&epd, BITS_PER_PIXEL, palette);
 WGConditions conditions;
 WGAstronomy astronomy;
 WGHourly hourlies[24];
+String mgg_payload;
 
 // Setup simpleDSTadjust Library rules
 simpleDSTadjust dstAdjusted(StartRule, EndRule);
@@ -98,6 +99,7 @@ void drawCurrentWeather();
 void drawForecast();
 void drawForecastDetail(uint16_t x, uint16_t y, uint8_t dayIndex);
 void drawAstronomy();
+void drawMgg();
 void drawCurrentWeatherDetail();
 void drawLabelValue(uint8_t line, String label, String value);
 void drawBattery();
@@ -169,7 +171,11 @@ void setup() {
       drawBattery();
       drawCurrentWeather();
       drawForecast();
-      drawAstronomy();
+      if (mgg_payload.length() > 0) {
+        drawMgg();
+      } else {
+        drawAstronomy();
+      }
       drawButtons();
       gfx.commit();
     } else {
@@ -190,10 +196,7 @@ void loop() {
 
 }
 
-// Update the internet based information and update screen
-void updateData() {
-  configTime(UTC_OFFSET * 3600, 0, NTP_SERVERS);
-
+void refreshScreen() {
   //gfx.fillBuffer(MINI_WHITE);
   gfx.setColor(MINI_BLACK);
   gfx.fillRect(0, SCREEN_HEIGHT - 12, SCREEN_WIDTH, 12);
@@ -205,8 +208,25 @@ void updateData() {
 
   //gfx.fillBuffer(MINI_BLACK);
   gfx.setFont(ArialRoundedMTBold_14);
+}
 
+// Update the internet based information and update screen
+void updateData() {
+  configTime(UTC_OFFSET * 3600, 0, NTP_SERVERS);
 
+  HTTPClient http;
+  http.begin("http://www.eiboeck.de/mgg.php");
+  int httpCode = http.GET();
+  http.setReuse(true);
+  mgg_payload = "";
+  if (httpCode) {
+    if (httpCode == HTTP_CODE_OK) {
+      mgg_payload = http.getString();
+      http.end();
+    } else {
+      mgg_payload = "Error: " +  http.errorToString(httpCode);
+    }
+  }
 
   WundergroundConditions *conditionsClient = new WundergroundConditions(IS_METRIC);
   Serial.println("\nAbout to call Weather Underground to fetch station's current data...");
@@ -243,6 +263,15 @@ void updateData() {
     delay(100);
   }
 
+  refreshScreen();
+}
+
+void drawMgg() {
+  gfx.setFont(ArialMT_Plain_10);
+  gfx.setColor(MINI_BLACK);
+  gfx.setTextAlignment(TEXT_ALIGN_LEFT);
+  gfx.drawString(5, 68, "MGG:");
+  gfx.drawString(40, 68, mgg_payload);
 }
 
 // draws the clock
