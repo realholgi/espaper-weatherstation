@@ -215,7 +215,9 @@ void updateData() {
   configTime(UTC_OFFSET * 3600, 0, NTP_SERVERS);
 
   HTTPClient http;
-  http.begin("http://www.eiboeck.de/mgg.php");
+  // hacked ~/Library/Arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ESP8266HTTPClient/src/ESP8266HTTPClient.cpp
+  // for verify to always return true https://github.com/esp8266/Arduino/pull/3933 id fingerprint is *
+  http.begin("https://www.eiboeck.de/mgg.php", "*");
   int httpCode = http.GET();
   http.setReuse(true);
   mgg_payload = "";
